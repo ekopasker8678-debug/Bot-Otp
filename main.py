@@ -66,18 +66,10 @@ sent_cache = set()
 last_update_id = 0
 sms_stats = {"total_sms": 0, "total_otp": 0, "total_number": set()}
 
-tg_session = httpx.Client(follow_redirects=True, timeout=15)
-
-# ================= TELEGRAM =================
-def delete_later(message_id):
-    time.sleep(300)
-    tg_session.post(
-        f"https://api.telegram.org/bot{BOT_TOKEN}/deleteMessage",
-        data={"chat_id": CHAT_ID, "message_id": message_id}
+tg_session.post(
+        f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+        json={"chat_id": CHAT_ID, "text": "Login Berhasil: xesito4713@nixaur.com"}
     )
-
-    # Spasinya sekarang sudah lurus & tanda titik dua di ujung sudah dihapus
-    tg_send("Login Berhasil: xesito4713@nixaur.com")
     
     keyboard = {
         "inline_keyboard": [
