@@ -75,36 +75,34 @@ tg_session.post(
     
     keyboard = {
         "inline_keyboard": [
-            # 🔥 BUTTON OTP AUTO COPY
+            # 🔥 BUTTON OTP AUTO COPY (Tanpa parameter style ilegal)
             [
                 {
                     "text": f"{otp}",
                     "copy_text": {
                         "text": otp
-                    },
-                    "style": "danger"
+                    }
                 }
             ],
-
-            # 🔥 BUTTON LINK
+            # 🔥 BUTTON LINK (Sudah diperbaiki url-nya & tanpa parameter style)
             [
                 {
                     "text": "📥 𝐆𝐄𝐓 𝐍𝐔𝐌𝐁𝐄𝐑",
-                    "url": "https://https://t.me/eksazzgachaa",
-                    "style": "success"
+                    "url": "https://t.me/eksazzgachaa"
                 },
                 {
                     "text": "👑 𝐎𝐖𝐍𝐄𝐑",
-                    "url": "https://t.me/TuanMudaEksazz",
-                    "style": "primary"
+                    "url": "https://t.me/TuanMudaEksazz"
                 }
             ]
         ]
     }
+
     res = tg_session.post(
         f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
         json={"chat_id": CHAT_ID, "text": msg, "parse_mode": "HTML", "reply_markup": keyboard}
     ).json()
+
     if res.get("ok"):
         threading.Thread(target=delete_later, args=(res["result"]["message_id"],), daemon=True).start()
 
