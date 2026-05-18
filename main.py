@@ -1,38 +1,38 @@
 import httpx
-from bs4 import BeautifulSoup
-import re
-from datetime import datetime, timedelta
-import time
-import json
-import threading
-import os
-from flask import Flask
+dari bs4 impor BeautifulSoup
+impor ulang
+dari datetime impor datetime, timedelta
+waktu impor
+impor json
+impor threading
+impor os
+dari flask impor Flask
 def tg_send(message):
-    tg_session.post(
-        f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-        json={"chat_id": CHAT_ID, "text": message}
-    )
-app = Flask(__name__)
+    BOT_TOKEN = os.getenv("BOT_TOKEN")
+    CHAT_ID = os.getenv("CHAT_ID")
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    httpx.post(url, json={"chat_id": CHAT_ID, "text": message})
+aplikasi = Flask ( __nama__ )
 
-@app.route("/")
-def home():
-    return "Bot is running"
+@ app.route ( "/" )
+def  home ( ) :
+    kembali  "Bot sedang berjalan"
     
-with open("flag.json", "r", encoding="utf-8") as f:
-    FLAGS = json.load(f)
+dengan  membuka ( "flag.json" , "r" , encoding= "utf-8" )  sebagai f:
+    BENDERA = json.load ( f )
 
-# ================= CONFIG =================
-BASE = "https://ivas.tempnum.qzz.io"
-LOGIN_URL = f"{BASE}/login"
-GET_RANGE_URL = f"{BASE}/portal/sms/received/getsms"
-GET_NUMBER_URL = f"{BASE}/portal/sms/received/getsms/number"
-GET_SMS_URL = f"{BASE}/portal/sms/received/getsms/number/sms"
-TEST_SMS_URL = f"{BASE}/portal/sms/test/sms"
-RETURN_ALL_URL = f"{BASE}/portal/numbers/return/allnumber/bluck"
+# ================= KONFIGURASI =================
+DASAR = "https://ivas.tempnum.qzz.io"
+LOGIN_URL = f" { BASE } /login"
+GET_RANGE_URL = f" { BASE } /portal/sms/received/getsms"
+GET_NUMBER_URL = f" { BASE } /portal/sms/received/getsms/number"
+GET_SMS_URL = f" { BASE } /portal/sms/received/getsms/number/sms"
+TEST_SMS_URL = f" { BASE } /portal/sms/test/sms"
+RETURN_ALL_URL = f" { BASE } /portal/numbers/return/allnumber/bluck"
 
 BOT_TOKEN = "8536331111:AAHKHdUS3bHdW-if-hN4tew9-uf_KgA9hKE"
-CHAT_ID = "-1003984614969"
-OWNER_ID = 6661810143
+ID_CHAT = "-1003984614969"
+ID PEMILIK = 6661810143
 
 ADDNUM_API_URL = "https://ws.websocket.web.id/admin/addnumber"
 ADDNUM_API_KEY = "112231"
