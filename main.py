@@ -82,16 +82,22 @@ def tg_send(msg, otp):
         print(f"[X] Gagal mengirim pesan telegram: {e}")
 
 def tg_active(msg):
-    tg_session.post(
-        f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-        data={"chat_id": CHAT_ID, "text": msg, "parse_mode": "HTML", "disable_web_page_preview": True}
-    )
+    try:
+        tg_session.post(
+            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+            data={"chat_id": CHAT_ID, "text": msg, "parse_mode": "HTML", "disable_web_page_preview": True}
+        )
+    except:
+        pass
 
 def send_msg(chat_id, text):
-    tg_session.post(
-        f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-        data={"chat_id": chat_id, "text": text, "parse_mode": "HTML", "disable_web_page_preview": True}
-    )
+    try:
+        tg_session.post(
+            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+            data={"chat_id": chat_id, "text": text, "parse_mode": "HTML", "disable_web_page_preview": True}
+        )
+    except:
+        pass
 
 def delete_msg(chat_id, message_id):
     try:
@@ -155,7 +161,7 @@ def handle_start(chat_id):
         "├ /delnumall - Return semua nomor\n"
         "├ /ambilfile - Export nomor ke Excel\n"
         "└ /statsms - Statistik SMS OTP\n\n"
-        "⏱ Delay cek : 5 detik | Auto hapus : permanen menit\n\n"
+        "⏱ Delay cek : 5 detik\n\n"
         "🔗 <b>Links</b>\n"
         "├ <a href='https://t.me/whizyv2'>Developer</a>\n"
         "└ <a href='https://t.me/officialwhizy'>Channel</a>"
@@ -258,62 +264,4 @@ def get_fresh_csrf(session):
                 return None, "session_expired"
         if r.status_code in (301, 302):
             r = session.get(f"{BASE}/portal/numbers", follow_redirects=True, timeout=15)
-        soup = BeautifulSoup(r.text, "html.parser")
-        token_input = soup.find("input", {"name": "_token"})
-        if token_input and token_input.get("value"):
-            return token_input["value"], None
-        meta = soup.find("meta", {"name": "csrf-token"})
-        if meta and meta.get("content"):
-            return meta["content"], None
-        m = re.search(r'name=["\']_token["\']\s+value=["\']([^"\']+)["\']', r.text)
-        if m:
-            return m.group(1), None
-        return None, "token_not_found"
-    except Exception as e:
-        return None, str(e)
-
-def export_numbers_ivas(chat_id, email):
-    acc_target = None
-    for a in ACCOUNTS:
-        if a["USERNAME"] == email and a.get("session"):
-            acc_target = a
-            break
-    if not acc_target:
-        send_msg(chat_id, "❌ Akun tidak ditemukan"); return
-
-    session = acc_target["session"]
-    send_msg(chat_id, f"⏳ Mengambil file export untuk <code>{mask_email(email)}</code>...")
-
-    try:
-        token, err = get_fresh_csrf(session)
-        if err == "session_expired":
-            print(f"[~] Session expired untuk export, relogin: {email}")
-            login(acc_target)
-            token, err = get_fresh_csrf(session)
-            if err:
-                send_msg(chat_id, f"❌ Session expired & relogin gagal\nError: {err}"); return
-        if not token:
-            token = acc_target.get("csrf_token", "")
-            if not token:
-                send_msg(chat_id, "❌ CSRF token tidak ditemukan"); return
-
-        export_url = f"{BASE}/portal/numbers/export"
-        for method in ["POST", "GET"]:
-            if method == "POST":
-                r = session.post(
-                    export_url,
-                    data={"_token": token},
-                    headers={
-                        "X-Requested-With": "XMLHttpRequest",
-                        "Referer": f"{BASE}/portal/numbers",
-                        "Accept": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,*/*"
-                    },
-                    follow_redirects=False,
-                    timeout=30
-                )
-            else:
-                r = session.get(
-                    export_url,
-                    headers={
-                        "X-Requested-With": "XMLHttpRequest",
-                        "Referer
+        soup = BeautifulSoup(r.
