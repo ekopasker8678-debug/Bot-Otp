@@ -76,7 +76,7 @@ def delete_later(message_id):
         data={"chat_id": CHAT_ID, "message_id": message_id}
     )
 
-def tg_send(text, otp):
+def tg_send(msg):
     keyboard = {
         "inline_keyboard": [
 
