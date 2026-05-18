@@ -1,19 +1,20 @@
 import httpx
-dari bs4 impor BeautifulSoup
-impor ulang
-dari datetime impor datetime, timedelta
-waktu impor
-impor json
-impor threading
-impor os
-dari flask impor Flask
+from bs4 import BeautifulSoup
+import re
+from datetime import datetime, timedelta
+import time
+import json
+import threading
+import os
+from flask import Flask
+
 def tg_send(message):
     BOT_TOKEN = os.getenv("BOT_TOKEN")
     CHAT_ID = os.getenv("CHAT_ID")
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     httpx.post(url, json={"chat_id": CHAT_ID, "text": message})
-aplikasi = Flask ( __nama__ )
 
+app = Flask(__name__)
 @ app.route ( "/" )
 def  home ( ) :
     kembali  "Bot sedang berjalan"
