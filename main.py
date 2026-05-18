@@ -75,8 +75,7 @@ def delete_later(message_id):
         f"https://api.telegram.org/bot{BOT_TOKEN}/deleteMessage",
         data={"chat_id": CHAT_ID, "message_id": message_id}
     )
-
-def tg_send(f"Login Berhasil: {xesito4713@nixaur.com}")):
+ tg_send("Login Berhasil: xesito4713@nixaur.com"):
     keyboard = {
         "inline_keyboard": [
 
