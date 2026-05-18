@@ -69,13 +69,13 @@ last_update_id = 0
 sms_stats = {"total_sms": 0, "total_otp": 0, "total_number": set()}
 
 tg_session.post(
+tg_session.post(
         f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
         json={"chat_id": CHAT_ID, "text": "Login Berhasil: xesito4713@nixaur.com"}
     )
     
     keyboard = {
         "inline_keyboard": [
-
             # 🔥 BUTTON OTP AUTO COPY
             [
                 {
