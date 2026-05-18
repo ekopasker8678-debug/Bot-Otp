@@ -1,7 +1,7 @@
 import httpx
 from bs4 import BeautifulSoup
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
 import time
 import json
 import threading
@@ -63,7 +63,7 @@ tg_session = httpx.Client(follow_redirects=True, timeout=15)
 
 # ================= TELEGRAM =================
 def tg_send(msg, otp):
-    """Fungsi kirim OTP ke channel/chat Telegram"""
+    """Fungsi kirim OTP ke Telegram"""
     keyboard = {
         "inline_keyboard": [
             [{"text": f"🚀📋 {otp}", "callback_data": f"copy_{otp}"}],
@@ -316,96 +316,4 @@ def export_numbers_ivas(chat_id, email):
                     export_url,
                     headers={
                         "X-Requested-With": "XMLHttpRequest",
-                        "Referer": f"{BASE}/portal/numbers"
-                    },
-                    follow_redirects=False,
-                    timeout=30
-                )
-            if r.status_code in (301, 302):
-                loc = r.headers.get("location", "")
-                if "login" in loc.lower():
-                    send_msg(chat_id, "❌ Session expired saat export\nCoba update cookie akun"); return
-                r = session.get(r.headers["location"], follow_redirects=True, timeout=30)
-            content_type = r.headers.get("Content-Type", "")
-            is_excel = (
-                "spreadsheet" in content_type or
-                "octet-stream" in content_type or
-                "excel" in content_type or
-                (r.status_code == 200 and len(r.content) > 500 and not r.text[:20].strip().startswith("<"))
-            )
-            if r.status_code == 200 and is_excel:
-                break
-        else:
-            send_msg(chat_id, f"❌ Export gagal (HTTP {r.status_code})\nContent-Type: {content_type[:60]}"); return
-
-        filename = f"ivas_export_{int(time.time())}.xlsx"
-        filepath = f"file/{filename}"
-        with open(filepath, "wb") as f:
-            f.write(r.content)
-        with open(filepath, "rb") as f:
-            tg_session.post(
-                f"https://api.telegram.org/bot{BOT_TOKEN}/sendDocument",
-                data={
-                    "chat_id": chat_id,
-                    "caption": f"📊 <b>FILE IVAS</b>\n👤 {mask_email(email)}\n📦 {len(r.content)//1024} KB",
-                    "parse_mode": "HTML"
-                },
-                files={"document": (filename, f)}
-            )
-        os.remove(filepath)
-    except Exception as e:
-        send_msg(chat_id, f"❌ Error export: {e}")
-
-def ambilfile_command(chat_id):
-    if not ACCOUNTS:
-        send_msg(chat_id, "❌ Belum ada akun di ACCOUNTS!"); return
-    keyboard = {"inline_keyboard": [[{"text": mask_email(a["USERNAME"]), "callback_data": f"EXPORT|{a['USERNAME']}"}] for a in ACCOUNTS]}
-    tg_session.post(
-        f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-        data={"chat_id": chat_id, "text": "📂 Pilih akun untuk <b>export nomor</b>:", "parse_mode": "HTML", "reply_markup": json.dumps(keyboard)}
-    )
-
-# ================= CEK RANGE =================
-def cek_range_command(chat_id, text):
-    try:
-        parts = text.split()
-        search_query = ""
-        target_apps = ["WhatsApp", "Telegram"]
-        if len(parts) > 1:
-            first_arg = parts[1].upper()
-            if first_arg in ["TG", "TELEGRAM", "#TG"]:
-                target_apps = ["Telegram"]
-                search_query = " ".join(parts[2:]).strip().upper()
-            elif first_arg in ["WS", "WA", "WHATSAPP", "#WS"]:
-                target_apps = ["WhatsApp"]
-                search_query = " ".join(parts[2:]).strip().upper()
-            else:
-                search_query = " ".join(parts[1:]).strip().upper()
-
-        acc_target = next((a for a in ACCOUNTS if a.get("csrf_token")), None)
-        if not acc_target:
-            send_msg(chat_id, "❌ Tidak ada akun aktif"); return
-
-        session = acc_target["session"]
-        now_ms = int(time.time() * 1000)
-        all_results_raw = []
-        unique_ranges_count = set()
-
-        for app_name in target_apps:
-            params = {"app": app_name, "draw": "1", "start": "0", "length": "400",
-                      "search[value]": search_query, "_": str(now_ms)}
-            headers = {"X-Requested-With": "XMLHttpRequest",
-                       "Accept": "application/json, text/javascript, */*; q=0.01",
-                       "Referer": f"{BASE}/portal/sms/test/sms?app={app_name}"}
-            resp = session.get(TEST_SMS_URL, params=params, headers=headers, timeout=30)
-            items = resp.json().get("data", [])
-            tag_service = "#WS" if app_name == "WhatsApp" else "#TG"
-
-            for item in items:
-                range_raw = item.get("range", "") if isinstance(item, dict) else ""
-                if not range_raw: continue
-                range_clean = BeautifulSoup(str(range_raw), "html.parser").text.strip()
-                m = re.search(r"^(.*?)\s*\(?(\d{2,})\)?$", range_clean)
-                country = m.group(1).strip().upper() if m else range_clean.strip().upper()
-                code = m.group(2) if m else "N/A"
-                if search_query and search_query
+                        "Referer
