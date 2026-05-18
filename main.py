@@ -7,7 +7,11 @@ import json
 import threading
 import os
 from flask import Flask
-
+def tg_send(message):
+    tg_session.post(
+        f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+        json={"chat_id": CHAT_ID, "text": message}
+    )
 app = Flask(__name__)
 
 @app.route("/")
