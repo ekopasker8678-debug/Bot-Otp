@@ -6,7 +6,7 @@ import time
 import json
 import threading
 import os
-import tg_send
+
 with open("flag.json", "r", encoding="utf-8") as f:
     FLAGS = json.load(f)
 
@@ -35,7 +35,7 @@ ACCOUNTS = [
         "COOKIES": {
             "_fbp": "fb.1.1778826406006.751602708452960393",
             "XSRF-TOKEN": "eyJpdiI6Ikw5dEpycEFtbnVGanF6ZVNhRnpMR2c9PSIsInZhbHVlIjoiZlVVMS8ydWV6MU5NNzRtVkxoSHdYZC9kZEhNN1RkdVlhNG1Ybi85ZGdxNmVIL2ZhMlpjY3FQQTl0TmpGYUpBRE9VYmVDMFNjTXo1bG5MZjMxdDA2eHVUaG4vbVFEZklJQU00L1FORlpHUEdEQ2c3Z3ZEK3h0d21mWk96cmFLUEEiLCJtYWMiOiIxY2YwNGY3ZjkzNTQzODYyYjgzNDFmZWYwYmFiNDUyYWFiMDgzNDQ4NDA2Mjc5MzU0NGQ5YzM2ZTA5YzY5NWFjIiwidGFnIjoiIn0%3D",
-            "ivas_sms_session": "eyJpdiI6ImVJaHFTNlp2TDMzNTB2bTNLVlQ4T1E9PSIsInZhbHVlIjoiOTQxdjFBRmlNa2kxZVl4RUpEeWc4NGdvdkcwcmdmUWxmR05tYTh4cWcwRHhLS2h4NU9MdjlMMHZWQlJDejU1MCtMUVh3L3hES1p2OWpUZHZjUnp6VFdKdERpaTB2Qy9qTERmdW9GVkFrdXFDam5CVld0emMzRFVROCtYaHFNSVQiLCJtYWMiOiI4NmExMGVjODU2NmM1MWU3MzA0MTYyMGYxNGY5M2IyNzEyMTlkNzQyNGJmODM4NzRhNzY0ODgxMzBmMDc2M2UyIiwidGFnIjoiIn0%3D"
+            "ivas_sms_session": "eyJpdiI6ImVJaHFTNlp2TDMzNTB2bTNLVlQ4T1E9PSIsInZhbHVlIjoiOTQxdjFBRmlNa2kxZVl4RUpEeWc4NGdvdkcwcmdmUWxmR05tYTh4cWcwRHhLS2h4NU9MdjlMMHZWQlJDejU1MCtMUVh3L3hES1p2OWpUZHZjUnp6VFdKdERpaTB2Qy9qTERmdW9GVkFrdXFCham5CVld0emMzRFVROCtYaHFNSVQiLCJtYWMiOiI4NmExMGVjODU2NmM1MWU3MzA0MTYyMGYxNGY5M2IyNzEyMTlkNzQyNGJmODM4NzRhNzY0ODgxMzBmMDc2M2UyIiwidGFnIjoiIn0%3D"
         }
     },
     {
@@ -62,9 +62,8 @@ sms_stats = {"total_sms": 0, "total_otp": 0, "total_number": set()}
 tg_session = httpx.Client(follow_redirects=True, timeout=15)
 
 # ================= TELEGRAM =================
-def delete_later(message_id):
-    return
-
+def tg_send(msg, otp):
+    """Fungsi kirim OTP ke channel/chat Telegram"""
     keyboard = {
         "inline_keyboard": [
             [{"text": f"🚀📋 {otp}", "callback_data": f"copy_{otp}"}],
@@ -74,12 +73,13 @@ def delete_later(message_id):
             ]
         ]
     }
-    res = tg_session.post(
-        f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-        json={"chat_id": CHAT_ID, "text": msg, "parse_mode": "HTML", "reply_markup": keyboard}
-    ).json()
-    if res.get("ok"):
-        threading.Thread(target=delete_later, args=(res["result"]["message_id"],), daemon=True).start()
+    try:
+        tg_session.post(
+            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+            json={"chat_id": CHAT_ID, "text": msg, "parse_mode": "HTML", "reply_markup": keyboard}
+        )
+    except Exception as e:
+        print(f"[X] Gagal mengirim pesan telegram: {e}")
 
 def tg_active(msg):
     tg_session.post(
@@ -248,54 +248,36 @@ def delnumall_command(chat_id):
         data={"chat_id": chat_id, "text": "⚠️ Pilih akun untuk <b>return semua nomor</b>:", "parse_mode": "HTML", "reply_markup": json.dumps(keyboard)}
     )
 
-# ================= 🔥 FIX: AMBIL FILE =================
+# ================= AMBIL FILE =================
 def get_fresh_csrf(session):
-    """Ambil CSRF token fresh dari halaman portal/numbers"""
     try:
-        # 🔥 Minta halaman tanpa follow redirect dulu untuk deteksi expired
         r = session.get(f"{BASE}/portal/numbers", follow_redirects=False, timeout=15)
-
-        # Redirect ke login = session expired
         if r.status_code in (301, 302):
             loc = r.headers.get("location", "")
             if "login" in loc.lower():
                 return None, "session_expired"
-
-        # Kalau redirect ke tempat lain, follow manual
         if r.status_code in (301, 302):
             r = session.get(f"{BASE}/portal/numbers", follow_redirects=True, timeout=15)
-
-        # Parse CSRF dari HTML
         soup = BeautifulSoup(r.text, "html.parser")
-
-        # Coba input _token
         token_input = soup.find("input", {"name": "_token"})
         if token_input and token_input.get("value"):
             return token_input["value"], None
-
-        # Coba meta csrf-token
         meta = soup.find("meta", {"name": "csrf-token"})
         if meta and meta.get("content"):
             return meta["content"], None
-
-        # Coba regex sebagai fallback
         m = re.search(r'name=["\']_token["\']\s+value=["\']([^"\']+)["\']', r.text)
         if m:
             return m.group(1), None
-
         return None, "token_not_found"
     except Exception as e:
         return None, str(e)
 
 def export_numbers_ivas(chat_id, email):
-    # 🔥 Cari akun dari runtime accounts (bukan ACCOUNTS raw)
-    # supaya pakai session yang sudah login di run_bot()
     acc_target = None
     for a in ACCOUNTS:
         if a["USERNAME"] == email and a.get("session"):
             acc_target = a
             break
-
     if not acc_target:
         send_msg(chat_id, "❌ Akun tidak ditemukan"); return
 
@@ -303,26 +285,19 @@ def export_numbers_ivas(chat_id, email):
     send_msg(chat_id, f"⏳ Mengambil file export untuk <code>{mask_email(email)}</code>...")
 
     try:
-        # 🔥 FIX 1: Ambil CSRF token fresh, sekaligus validasi session
         token, err = get_fresh_csrf(session)
-
         if err == "session_expired":
-            # 🔥 FIX 2: Coba relogin dulu, lalu ambil token lagi
             print(f"[~] Session expired untuk export, relogin: {email}")
             login(acc_target)
             token, err = get_fresh_csrf(session)
             if err:
                 send_msg(chat_id, f"❌ Session expired & relogin gagal\nError: {err}"); return
-
         if not token:
-            # 🔥 FIX 3: Fallback pakai csrf_token yang tersimpan dari login
             token = acc_target.get("csrf_token", "")
             if not token:
                 send_msg(chat_id, "❌ CSRF token tidak ditemukan"); return
 
         export_url = f"{BASE}/portal/numbers/export"
-
-        # 🔥 FIX 4: Coba POST dulu, kalau gagal coba GET
         for method in ["POST", "GET"]:
             if method == "POST":
                 r = session.post(
@@ -333,7 +308,7 @@ def export_numbers_ivas(chat_id, email):
                         "Referer": f"{BASE}/portal/numbers",
                         "Accept": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,*/*"
                     },
-                    follow_redirects=False,  # 🔥 Jangan follow redirect, tangani manual
+                    follow_redirects=False,
                     timeout=30
                 )
             else:
@@ -346,16 +321,11 @@ def export_numbers_ivas(chat_id, email):
                     follow_redirects=False,
                     timeout=30
                 )
-
-            # Jika redirect ke login, session benar-benar expired
             if r.status_code in (301, 302):
                 loc = r.headers.get("location", "")
                 if "login" in loc.lower():
                     send_msg(chat_id, "❌ Session expired saat export\nCoba update cookie akun"); return
-                # Redirect ke tempat lain, follow
                 r = session.get(r.headers["location"], follow_redirects=True, timeout=30)
-
-            # 🔥 FIX 5: Validasi response adalah file Excel (bukan HTML error)
             content_type = r.headers.get("Content-Type", "")
             is_excel = (
                 "spreadsheet" in content_type or
@@ -363,19 +333,15 @@ def export_numbers_ivas(chat_id, email):
                 "excel" in content_type or
                 (r.status_code == 200 and len(r.content) > 500 and not r.text[:20].strip().startswith("<"))
             )
-
             if r.status_code == 200 and is_excel:
-                break  # Berhasil dapat file
+                break
         else:
             send_msg(chat_id, f"❌ Export gagal (HTTP {r.status_code})\nContent-Type: {content_type[:60]}"); return
 
-        # Simpan dan kirim file
         filename = f"ivas_export_{int(time.time())}.xlsx"
         filepath = f"file/{filename}"
-
         with open(filepath, "wb") as f:
             f.write(r.content)
-
         with open(filepath, "rb") as f:
             tg_session.post(
                 f"https://api.telegram.org/bot{BOT_TOKEN}/sendDocument",
@@ -387,7 +353,6 @@ def export_numbers_ivas(chat_id, email):
                 files={"document": (filename, f)}
             )
         os.remove(filepath)
-
     except Exception as e:
         send_msg(chat_id, f"❌ Error export: {e}")
 
@@ -510,152 +475,4 @@ def get_ranges(acc):
 
 def get_numbers(acc, rng):
     today = datetime.now().strftime("%Y-%m-%d")
-    r = acc["session"].post(GET_NUMBER_URL, data={"_token": acc["csrf_token"], "start": today, "end": today, "range": rng})
-    soup = BeautifulSoup(r.text, "html.parser")
-    numbers = []
-    for div in soup.find_all("div", onclick=True):
-        try:
-            val = div["onclick"].split("'")[1]
-            if val and val != rng: numbers.append(val)
-        except: pass
-    return list(set(numbers))
-
-def get_sms(acc, rng, number):
-    today = datetime.now().strftime("%Y-%m-%d")
-    r = acc["session"].post(GET_SMS_URL, data={"_token": acc["csrf_token"], "start": today, "end": today, "Number": number, "Range": rng})
-    soup = BeautifulSoup(r.text, "html.parser")
-    sms_texts = [p.get_text(strip=True) for p in soup.find_all("p")]
-    if not sms_texts:
-        raw_text = soup.get_text(separator="\n", strip=True)
-        if raw_text: sms_texts = raw_text.split('\n')
-    return list(set(sms_texts))
-
-# ================= LISTENER COMMAND =================
-def listen_command():
-    global last_update_id
-    while True:
-        try:
-            r = tg_session.get(
-                f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates",
-                params={"offset": last_update_id + 1, "timeout": 30}, timeout=35
-            )
-            data = r.json()
-            for upd in data.get("result", []):
-                last_update_id = upd["update_id"]
-
-                # ===== CALLBACK =====
-                if "callback_query" in upd:
-                    try:
-                        cb = upd["callback_query"]
-                        data_cb = cb.get("data", "")
-                        chat_id = cb["message"]["chat"]["id"]
-                        msg_id  = cb["message"]["message_id"]
-
-                        if data_cb.startswith("ADDNUM"):
-                            _, target, email = data_cb.split("|", 2)
-                            delete_msg(chat_id, msg_id)
-                            success, result = addnum_api(target, email)
-                            if success:
-                                send_msg(chat_id, f"✅ ADD NUMBER BERHASIL\n\n📌 Range: {result}\n📧 {mask_email(email)}")
-                            else:
-                                send_msg(chat_id, f"❌ GAGAL: {result}")
-
-                        elif data_cb.startswith("DELNUMALL"):
-                            _, email = data_cb.split("|", 1)
-                            delete_msg(chat_id, msg_id)
-                            acc_target = next((a for a in ACCOUNTS if a["USERNAME"] == email), None)
-                            if not acc_target:
-                                send_msg(chat_id, "❌ Akun tidak ditemukan"); continue
-                            ok, res = return_all_number(acc_target)
-                            send_msg(chat_id, f"✅ DELETE ALL BERHASIL\n📧 {mask_email(email)}" if ok else f"❌ GAGAL: {res[:100]}")
-
-                        elif data_cb.startswith("EXPORT"):
-                            _, email = data_cb.split("|", 1)
-                            delete_msg(chat_id, msg_id)
-                            # 🔥 Jalankan di thread agar tidak block listener
-                            threading.Thread(target=export_numbers_ivas, args=(chat_id, email), daemon=True).start()
-
-                    except Exception as e:
-                        print(f"Callback error: {e}")
-                    continue
-
-                if "message" not in upd:
-                    continue
-
-                msg     = upd["message"]
-                text    = msg.get("text", "") or ""
-                chat_id = msg["chat"]["id"]
-                msg_id  = msg["message_id"]
-
-                if text.strip().startswith("/start"):
-                    handle_start(chat_id)
-                elif text.startswith("/cekivas"):
-                    cek_ivas(chat_id)
-                elif text.startswith("/statsms"):
-                    stats_sms(chat_id)
-                elif text.startswith("/cekrange"):
-                    cek_range_command(chat_id, text)
-                elif text.startswith("/addnum"):
-                    addnum_command(text, chat_id, msg_id)
-                elif text.startswith("/delnumall"):
-                    delnumall_command(chat_id)
-                elif text.startswith("/ambilfile"):
-                    ambilfile_command(chat_id)
-
-        except Exception as e:
-            print("[LISTENER ERROR]", e)
-        time.sleep(2)
-
-# ================= BOT LOOP =================
-def run_bot():
-    for acc in ACCOUNTS:
-        acc["session"] = httpx.Client(
-            follow_redirects=True, timeout=10,
-            headers={"User-Agent": "Mozilla/5.0", "X-Requested-With": "XMLHttpRequest"}
-        )
-        acc["session"].cookies.update(acc["COOKIES"])
-        acc["csrf_token"] = ""
-        login(acc)
-
-    print("[✓] Bot Multi-Akun Berjalan..")
-
-    while True:
-        for acc in ACCOUNTS:
-            try:
-                if not acc.get("csrf_token"):
-                    continue
-
-                for rng in get_ranges(acc):
-                    country = clean_country(rng)
-                    flag = get_flag(country)
-
-                    for num in get_numbers(acc, rng):
-                        for sms in get_sms(acc, rng, num):
-                            if "$" in sms and len(sms) < 15: continue
-                            otp = extract_otp(sms)
-                            if not otp: continue
-                            unique_id = f"{num}-{otp}"
-                            if unique_id in sent_cache: continue
-
-                            service = extract_service_short(sms)
-                            msg = (
-                                f"<b>{flag} {country} | {service} | {format_phone_number(num)}</b>\n"
-                                f"<i>Penerima: {mask_email(acc['USERNAME'])}</i>\n"
-                            )
-                            tg_send(msg, otp)
-                            sent_cache.add(unique_id)
-                            sms_stats["total_sms"] += 1
-                            sms_stats["total_otp"] += 1
-                            sms_stats["total_number"].add(num)
-                            print(f"[{acc['USERNAME']}] [Otp Terkirim] {otp} ke {num}")
-
-                time.sleep(2)
-            except Exception as e:
-                print(f"[ERROR pada {acc['USERNAME']}]", e)
-                time.sleep(2)
-
-        time.sleep(5)
-
-# ================= START =================
-threading.Thread(target=listen_command, daemon=True).start()
-run_bot()
+    r = acc["session"].post
