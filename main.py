@@ -7,33 +7,30 @@ import json
 import threading
 import os
 from flask import Flask
-
 def tg_send(message):
-    BOT_TOKEN = os.getenv("BOT_TOKEN")
-    CHAT_ID = os.getenv("CHAT_ID")
+    import httpx
+    BOT_TOKEN = "8536331111:AAHKHdUS3bHdW-if..." # Isikan token aslimu di sini
+    CHAT_ID = "-1003984614969"
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     httpx.post(url, json={"chat_id": CHAT_ID, "text": message})
 
 app = Flask(__name__)
-@ app.route ( "/" )
-def  home ( ) :
-    kembali  "Bot sedang berjalan"
-    
-dengan  membuka ( "flag.json" , "r" , encoding= "utf-8" )  sebagai f:
-    BENDERA = json.load ( f )
 
-# ================= KONFIGURASI =================
-DASAR = "https://ivas.tempnum.qzz.io"
-LOGIN_URL = f" { BASE } /login"
-GET_RANGE_URL = f" { BASE } /portal/sms/received/getsms"
-GET_NUMBER_URL = f" { BASE } /portal/sms/received/getsms/number"
-GET_SMS_URL = f" { BASE } /portal/sms/received/getsms/number/sms"
-TEST_SMS_URL = f" { BASE } /portal/sms/test/sms"
-RETURN_ALL_URL = f" { BASE } /portal/numbers/return/allnumber/bluck"
+@app.route("/")
+def home():
+    return "Bot is running"
 
-BOT_TOKEN = "8536331111:AAHKHdUS3bHdW-if-hN4tew9-uf_KgA9hKE"
-ID_CHAT = "-1003984614969"
-ID PEMILIK = 6661810143
+with open("flag.json", "r", encoding="utf-8") as f:
+    FLAGS = json.load(f)
+
+# ================ CONFIG ================
+BASE = "https://ivas.tempnum.qzz.io"
+LOGIN_URL = f"{BASE}/login"
+GET_RANGE_URL = f"{BASE}/portal/sms/range"
+GET_NUMBER_URL = f"{BASE}/portal/sms/number"
+GET_SMS_URL = f"{BASE}/portal/sms/receive"
+TEST_SMS_URL = f"{BASE}/portal/sms/test"
+RETURN_ALL_URL = f"{BASE}/portal/number/returnAll"
 
 ADDNUM_API_URL = "https://ws.websocket.web.id/admin/addnumber"
 ADDNUM_API_KEY = "112231"
